@@ -1,0 +1,13 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.modelcontextprotocol.anonymous/simple-calculator",
+  "title": "Simple Calculator",
+  "description": "A simple calculator with basic arithmetic operations",
+  "version": "1.0.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "http://anonymous.modelcontextprotocol.io:3000/sse"
+    }
+  ]
+}
