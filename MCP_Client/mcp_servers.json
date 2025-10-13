@@ -1,0 +1,10 @@
+{
+  "servers": [
+    {
+      "name": "Simple Calculator",
+      "transport": "sse",
+      "url": "http://anonymous.modelcontextprotocol.io:3000/sse",
+      "enabled": true
+    }
+  ]
+}

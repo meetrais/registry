@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private MCP Registry - Server Collection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 MCP Server Collection</h1>
+            <p class="subtitle">Private MCP Registry</p>
+        </header>
+
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search servers...">
+            <button id="refreshBtn">🔄 Refresh</button>
+            <button id="submitBtn">➕ Submit New MCP Server</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <span class="stat-number" id="totalServers">0</span>
+                <span class="stat-label">Total Servers</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="activeServers">0</span>
+                <span class="stat-label">Active</span>
+            </div>
+        </div>
+
+        <div id="serverGrid" class="server-grid">
+            <!-- Server cards will be dynamically inserted here -->
+        </div>
+
+        <div id="loading" class="loading">Loading servers...</div>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <!-- Submit Server Modal -->
+    <div id="submitModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Register New MCP Server</h2>
+                <span class="close" onclick="closeSubmitModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="serverForm">
+                    <div class="form-group">
+                        <label for="serverName">Server Name *</label>
+                        <input type="text" id="serverName" placeholder="io.github.username/my-server" required>
+                        <small>Use format: io.github.username/server-name</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serverTitle">Title *</label>
+                        <input type="text" id="serverTitle" placeholder="My MCP Server" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serverDescription">Description *</label>
+                        <textarea id="serverDescription" rows="3" placeholder="Describe what your server does..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serverVersion">Version *</label>
+                        <input type="text" id="serverVersion" value="1.0.0" placeholder="1.0.0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serverType">Server Type *</label>
+                        <select id="serverType" required>
+                            <option value="">-- Select Type --</option>
+                            <option value="remote">Remote Server (SSE/HTTP)</option>
+                            <option value="npm">NPM Package</option>
+                            <option value="pypi">PyPI Package</option>
+                            <option value="nuget">NuGet Package</option>
+                        </select>
+                    </div>
+
+                    <!-- Remote Server Fields -->
+                    <div id="remoteFields" class="conditional-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="remoteType">Transport Type *</label>
+                            <select id="remoteType">
+                                <option value="sse">Server-Sent Events (SSE)</option>
+                                <option value="http">HTTP</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="remoteUrl">Server URL *</label>
+                            <input type="url" id="remoteUrl" placeholder="http://localhost:3000/sse">
+                        </div>
+                    </div>
+
+                    <!-- Package Fields -->
+                    <div id="packageFields" class="conditional-fields" style="display: none;">
+                        <div class="form-group">
+                            <label for="packageIdentifier">Package Identifier *</label>
+                            <input type="text" id="packageIdentifier" placeholder="@username/package-name or package-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="packageVersion">Package Version *</label>
+                            <input type="text" id="packageVersion" placeholder="1.0.0">
+                        </div>
+                        <div class="form-group">
+                            <label for="transportType">Transport Type *</label>
+                            <select id="transportType">
+                                <option value="stdio">STDIO</option>
+                                <option value="sse">Server-Sent Events</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeSubmitModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Generate server.json</button>
+                    </div>
+                </form>
+
+                <div id="serverJsonOutput" style="display: none;">
+                    <h3>Generated server.json</h3>
+                    <p class="info-text">Copy this content to your <code>server.json</code> file and use the MCP publisher CLI to publish:</p>
+                    <pre><code id="generatedJson"></code></pre>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeSubmitModal()">Close</button>
+                        <button type="button" class="btn-primary" onclick="copyServerJson()">Copy to Clipboard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Integration Code Modal -->
+    <div id="integrationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>MCP Server Configuration</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p class="info-text">Add this JSON object to the <code>"servers"</code> array in your <code>mcp_servers.json</code> file:</p>
+                <pre><code id="integrationCode"></code></pre>
+            </div>
+            <div class="modal-footer">
+                <button class="copy-btn" onclick="copyCode()">Copy JSON</button>
+                <button class="close-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
