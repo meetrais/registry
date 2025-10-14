@@ -1,0 +1,77 @@
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud. It follows the same syntax as .gitignore, with the addition of
+# "#!include" directives (which insert the entries of the given .gitignore-style
+# file at that point).
+#
+# For more information, run:
+#   $ gcloud topic gcloudignore
+
+.gcloudignore
+.git
+.gitignore
+
+# Python virtual environments
+myenv/
+venv/
+env/
+ENV/
+.venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation and examples
+docs/
+*.md
+!README.md
+*.pdf
+*.svg
+
+# Deployment and infrastructure files (not needed in the build)
+deploy/
+scripts/
+tools/
+tests/
+.github/
+.goreleaser.yaml
+.golangci.yml
+Makefile
+
+# Config and example files
+.env.example
+docker-compose.yml
+temp_db_url.txt
+
+# MCP Collection web UI (not needed for registry service)
+MCP_Collection/
+
+# MCP Client (not needed for registry service)  
+MCP_Client/
+
+# MCP Servers examples (not needed for registry service)
+MCP_Servers/
+
+# Documentation files
+DEPLOYMENT_SETUP.md
+CLAUDE.md
+complete.md

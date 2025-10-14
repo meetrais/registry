@@ -15,3 +15,6 @@ deploy/infra/infra
 registry
 myenv/
 .vscode/
+
+# Temporary files with sensitive data
+temp_*.txt

@@ -1,0 +1,65 @@
+# Google Cloud Build configuration for MCP Registry
+
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/mcp-registry:$BUILD_ID'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/mcp-registry:latest'
+      - '.'
+
+  # Push the Docker image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/mcp-registry:$BUILD_ID'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/mcp-registry:latest'
+
+  # Deploy to Cloud Run with proper environment variables
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'mcp-registry'
+      - '--image=gcr.io/$PROJECT_ID/mcp-registry:$BUILD_ID'
+      - '--region=$_REGION'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--add-cloudsql-instances=$_CLOUDSQL_INSTANCE'
+      - '--set-env-vars=MCP_REGISTRY_SERVER_ADDRESS=:8080'
+      - '--set-env-vars=MCP_REGISTRY_SEED_FROM='
+      - '--set-env-vars=MCP_REGISTRY_ENABLE_ANONYMOUS_AUTH=true'
+      - '--update-secrets=MCP_REGISTRY_DATABASE_URL=database-url:latest'
+      - '--update-secrets=MCP_REGISTRY_JWT_PRIVATE_KEY=jwt-private-key:latest'
+      - '--update-secrets=MCP_REGISTRY_GITHUB_CLIENT_ID=github-client-id:latest'
+      - '--update-secrets=MCP_REGISTRY_GITHUB_CLIENT_SECRET=github-client-secret:latest'
+      - '--min-instances=1'
+      - '--max-instances=10'
+      - '--cpu=2'
+      - '--memory=1Gi'
+      - '--timeout=300s'
+      - '--port=8080'
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/mcp-registry:$BUILD_ID'
+  - 'gcr.io/$PROJECT_ID/mcp-registry:latest'
+
+# Substitutions - Update these values for your deployment
+substitutions:  
+  _REGION: us-central1
+  _CLOUDSQL_INSTANCE: mcp-private-registry:us-central1:mcp-registry-db
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'N1_HIGHCPU_8'
+
+timeout: '1200s'

@@ -141,6 +141,18 @@ cd MCP_Servers/simple-calculator
 curl http://localhost:8080/v0/servers
 ```
 
+**7. Browse your registry (optional):**
+
+For a better viewing experience, use the included web UI:
+```bash
+cd MCP_Collection
+python server.py
+```
+
+Visit **http://localhost:5000** to see your servers in a visual interface with search, statistics, and metadata display.
+
+---
+
 ## Publishing Your MCP Servers
 
 ### Create a server.json File
@@ -478,23 +490,45 @@ Once running, your registry provides:
 ## Architecture
 
 ```
-┌─────────────────┐
-│   MCP Client    │
-│  (Claude, etc)  │
-└────────┬────────┘
-         │ HTTP API
-         ▼
-┌─────────────────┐
-│  Registry API   │
-│  (Port 8080)    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   PostgreSQL    │
-│   Database      │
-└─────────────────┘
+┌──────────────────────────────────────────────────┐
+│                Registry Ecosystem                 │
+├──────────────────────────────────────────────────┤
+│                                                   │
+│  ┌─────────────┐         ┌──────────────┐       │
+│  │ MCP Servers │────────▶│  Publisher   │       │
+│  │  (Create)   │         │     CLI      │       │
+│  └─────────────┘         └──────┬───────┘       │
+│                                  │               │
+│                                  ▼               │
+│                         ┌─────────────────┐     │
+│  ┌─────────────┐       │  Registry API   │     │
+│  │ Collection  │◀──────│  (Port 8080)    │     │
+│  │  Web UI     │       └────────┬────────┘     │
+│  │ (Port 5000) │                │               │
+│  └─────────────┘                ▼               │
+│                         ┌─────────────────┐     │
+│  ┌─────────────┐       │   PostgreSQL    │     │
+│  │ MCP Client  │       │    Database     │     │
+│  │ (Test/Use)  │       └─────────────────┘     │
+│  └──────┬──────┘                                │
+│         │                                        │
+│         └────────────(connects to servers)      │
+│                                                  │
+└──────────────────────────────────────────────────┘
 ```
+
+**Components:**
+- **MCP_Servers/** - Create and develop your MCP servers
+- **Publisher CLI** - Authenticate and publish servers to registry
+- **Registry API** - Central server catalog (port 8080)
+- **PostgreSQL** - Server metadata storage
+- **Collection UI** - Web interface for browsing registry (port 5000)
+- **MCP Client** - Example AI agent for testing servers
+
+**Directories:**
+- `MCP_Servers/` - Example servers and templates ([README](MCP_Servers/README.md))
+- `MCP_Collection/` - Web UI for registry ([README](MCP_Collection/README.md))
+- `MCP_Client/` - AI-powered test client ([README](MCP_Client/README.md))
 
 ## Key Differences from Public Registry
 
@@ -511,7 +545,35 @@ The key change is setting `MCP_REGISTRY_SEED_FROM` to empty in both `.env` and `
 
 ### Production Deployment
 
-For production deployment:
+#### Google Cloud Platform (Cloud Run)
+
+For deploying to Google Cloud Run with Cloud SQL and Secret Manager, see the comprehensive guide:
+
+📖 **[DEPLOYMENT_SETUP.md](DEPLOYMENT_SETUP.md)** - Complete GCP deployment instructions
+
+This guide covers:
+- Cloud SQL PostgreSQL setup
+- Secret Manager configuration for credentials
+- Cloud Build and Cloud Run deployment
+- GitHub OAuth integration
+- Troubleshooting common deployment issues
+
+**Quick GCP Deployment:**
+```bash
+# After completing setup steps in DEPLOYMENT_SETUP.md
+gcloud builds submit --config cloudbuild.yaml
+```
+
+Your registry will be deployed to Cloud Run with:
+- ✅ Managed PostgreSQL database (Cloud SQL)
+- ✅ Secure credential storage (Secret Manager)
+- ✅ Auto-scaling (0-10 instances)
+- ✅ HTTPS endpoint
+- ✅ GitHub OAuth authentication
+
+#### Other Production Deployments
+
+For other production deployment options:
 
 1. Update database credentials in `.env`
 2. Configure proper domain and SSL/TLS

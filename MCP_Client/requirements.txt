@@ -1,3 +1,6 @@
-mcp>=1.0.0
-google-generativeai>=0.3.0
-python-dotenv>=1.0.0
+python-dotenv
+langchain
+langchain-google-genai
+langchain-mcp-adapters
+langgraph
+mcp
