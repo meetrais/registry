@@ -42,4 +42,10 @@ def get_info() -> str:
 if __name__ == "__main__":
     # Run the server as HTTP service
     import uvicorn
-    mcp.run(transport="sse", host="192.168.1.68", port=3000)
+    import os
+    
+    # Cloud Run sets PORT environment variable
+    port = int(os.environ.get("PORT", 3000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    
+    mcp.run(transport="sse", host=host, port=port)

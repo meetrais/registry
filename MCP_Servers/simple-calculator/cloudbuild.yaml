@@ -1,0 +1,56 @@
+# Google Cloud Build configuration for Simple Calculator MCP Server
+
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/simple-calculator:$BUILD_ID'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/simple-calculator:latest'
+      - '.'
+
+  # Push the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/simple-calculator:$BUILD_ID'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/simple-calculator:latest'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'simple-calculator'
+      - '--image=gcr.io/$PROJECT_ID/simple-calculator:$BUILD_ID'
+      - '--region=$_REGION'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--min-instances=0'
+      - '--max-instances=5'
+      - '--cpu=1'
+      - '--memory=512Mi'
+      - '--timeout=300s'
+      - '--port=8080'
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/simple-calculator:$BUILD_ID'
+  - 'gcr.io/$PROJECT_ID/simple-calculator:latest'
+
+# Substitutions
+substitutions:  
+  _REGION: us-central1
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'N1_HIGHCPU_8'
+
+timeout: '600s'

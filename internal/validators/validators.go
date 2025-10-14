@@ -564,6 +564,24 @@ func validateRemoteURLMatchesNamespace(remoteURL, namespace string) error {
 		return nil
 	}
 
+	// Skip validation for common cloud service domains
+	// Google Cloud Run, AWS, Azure, etc.
+	cloudDomains := []string{
+		".run.app",           // Google Cloud Run
+		".cloudfunctions.net", // Google Cloud Functions
+		".appspot.com",       // Google App Engine
+		".amazonaws.com",     // AWS
+		".azurewebsites.net", // Azure
+		".herokuapp.com",     // Heroku
+		".vercel.app",        // Vercel
+		".netlify.app",       // Netlify
+	}
+	for _, domain := range cloudDomains {
+		if strings.HasSuffix(hostname, domain) {
+			return nil
+		}
+	}
+
 	// Extract publisher domain from reverse-DNS namespace
 	publisherDomain := extractPublisherDomainFromNamespace(namespace)
 	if publisherDomain == "" {
