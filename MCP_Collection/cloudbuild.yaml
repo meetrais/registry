@@ -1,0 +1,60 @@
+# Google Cloud Build configuration for MCP Collection UI
+
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/mcp-collection-ui:$BUILD_ID'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/mcp-collection-ui:latest'
+      - '.'
+
+  # Push the Docker image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/mcp-collection-ui:$BUILD_ID'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/mcp-collection-ui:latest'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'mcp-collection-ui'
+      - '--image=gcr.io/$PROJECT_ID/mcp-collection-ui:$BUILD_ID'
+      - '--region=$_REGION'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars=MCP_REGISTRY_URL=$_REGISTRY_URL'
+      - '--min-instances=0'
+      - '--max-instances=5'
+      - '--cpu=1'
+      - '--memory=512Mi'
+      - '--timeout=60s'
+      - '--port=8080'
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/mcp-collection-ui:$BUILD_ID'
+  - 'gcr.io/$PROJECT_ID/mcp-collection-ui:latest'
+
+# Substitutions - Update these values for your deployment
+substitutions:  
+  _REGION: us-central1
+  # Set this to your deployed registry URL (e.g., https://mcp-registry-xxxxx-uc.a.run.app)
+  _REGISTRY_URL: https://mcp-registry-e22hv7w4ga-uc.a.run.app
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'N1_HIGHCPU_8'
+
+timeout: '600s'
+

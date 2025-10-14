@@ -131,12 +131,15 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == '__main__':
-    PORT = 5000
+    # Cloud Run sets PORT environment variable, default to 5000 for local dev
+    PORT = int(os.environ.get('PORT', 5000))
+    # Bind to 0.0.0.0 for Cloud Run, localhost for local dev
+    HOST = os.environ.get('HOST', '0.0.0.0' if os.environ.get('PORT') else 'localhost')
     
     print(f"Starting MCP Collection UI server...")
-    print(f"Server running at: http://localhost:{PORT}")
-    print(f"Registry API at: http://localhost:8080")
+    print(f"Server running at: http://{HOST}:{PORT}")
+    print(f"Registry API at: {REGISTRY_URL}")
     print(f"\nPress Ctrl+C to stop the server\n")
     
-    server = HTTPServer(('localhost', PORT), CORSRequestHandler)
+    server = HTTPServer((HOST, PORT), CORSRequestHandler)
     server.serve_forever()

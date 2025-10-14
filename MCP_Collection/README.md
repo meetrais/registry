@@ -1,138 +1,243 @@
 # MCP Collection UI
 
-A beautiful web interface to view MCP servers from your private registry.
+A web-based user interface for browsing and managing MCP (Model Context Protocol) servers in your registry.
 
 ## Features
 
-- 🎨 Modern, responsive design
-- 🔍 Search functionality
-- 🔄 Live refresh
-- 📊 Server statistics
-- 🎯 Clean server cards with all metadata
+- 🔍 Browse registered MCP servers
+- 🔐 GitHub OAuth authentication
+- ➕ Register new MCP servers via UI
+- 📋 Generate integration JSON for Kiro/Claude
+- 🎨 Clean, modern interface
+- 🔄 Real-time server list updates
 
-## Quick Start
+## Local Development
 
-### Step 1: Install Dependencies
+### Prerequisites
 
-The server requires `python-dotenv` to load configuration from the `.env` file:
+- Python 3.11+
+- MCP Registry running (locally or on Cloud Run)
 
-```bash
-pip install python-dotenv
-```
+### Setup
 
-### Step 2: Configure Registry URL
+1. **Install dependencies** (optional, for .env support):
+   ```bash
+   pip install python-dotenv
+   ```
 
-Edit the `.env` file in the `MCP_Collection` directory to point to your registry:
+2. **Configure environment** (optional):
+   Create a `.env` file:
+   ```env
+   MCP_REGISTRY_URL=http://localhost:8080
+   ```
 
-```bash
-# For local development
-MCP_REGISTRY_URL=http://localhost:8080
+3. **Run the server**:
+   ```bash
+   python server.py
+   ```
 
-# For Cloud Run deployment
-MCP_REGISTRY_URL=https://your-registry-url.run.app
-```
+4. **Open in browser**:
+   ```
+   http://localhost:5000
+   ```
 
-### Step 3: Start the UI Server
+## Deployment to Cloud Run
 
-Navigate to the MCP_Collection directory and run:
+### Quick Deploy
+
+From the **MCP_Collection directory**:
 
 ```bash
 cd MCP_Collection
-python server.py
+gcloud builds submit --config cloudbuild.yaml
 ```
 
-The server will start at **http://localhost:5000**
+**Important:** You must run this from the MCP_Collection directory because the root `.gcloudignore` excludes the MCP_Collection folder.
 
-### Step 4: Open in Browser
+Before deploying, update `cloudbuild.yaml` with your registry URL:
+```yaml
+substitutions:  
+  _REGION: us-central1
+  _REGISTRY_URL: https://your-registry-url.run.app
+```
 
-Visit: **http://localhost:5000**
+After deployment, enable public access:
+```bash
+gcloud run services add-iam-policy-binding mcp-collection-ui \
+  --region=us-central1 \
+  --member="allUsers" \
+  --role="roles/run.invoker"
+```
 
-### Step 5: View Your Servers
-
-The UI will automatically:
-- Fetch servers from your configured registry (check `.env` file)
-- Display them in beautiful cards
-- Show statistics and metadata
-
-## How It Works
-
-1. **.env** - Configuration file that:
-   - Stores the registry URL
-   - Can be customized for local or cloud deployment
-
-2. **server.py** - Python HTTP server that:
-   - Loads configuration from `.env` file
-   - Serves the UI files (HTML, CSS, JS)
-   - Proxies API requests to avoid CORS issues
-   - Runs on port 5000
-
-3. **index.html** - Main UI structure
-
-4. **styles.css** - Beautiful styling with gradient background
-
-5. **app.js** - JavaScript that:
-   - Fetches servers from `/api/servers`
-   - Displays them in cards
-   - Handles search and refresh
+For complete GCP deployment instructions, see the main [README.md](../README.md#gcp-deployment).
 
 ## Architecture
 
 ```
-Browser (localhost:5000)
-    ↓
-Python Server (server.py)
-    ↓ (proxies to)
-Registry API (localhost:8080/v0/servers)
+┌─────────────────┐
+│   Browser       │
+│   (User)        │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Python Server  │
+│  (server.py)    │
+│  - Serves UI    │
+│  - Proxies API  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  MCP Registry   │
+│  (Go Backend)   │
+│  - REST API     │
+│  - Database     │
+└─────────────────┘
 ```
 
-## Features in Detail
+## Files
 
-### Server Cards Show:
-- Server icon (dynamic based on type)
-- Title and full name
-- Description
-- Version badge
-- Status badge (active/inactive)
-- Transport type
-- Published/Updated dates
-- Endpoint URL (clickable)
+- `server.py` - Python HTTP server with API proxy
+- `index.html` - Main UI page
+- `styles.css` - Styling
+- `app.js` - Frontend JavaScript
+- `Dockerfile` - Container definition
+- `cloudbuild.yaml` - Cloud Build configuration
+- `DEPLOYMENT.md` - Deployment guide
 
-### Search:
-- Filter by server name, title, or description
-- Real-time filtering
+## Configuration
 
-### Statistics:
-- Total servers count
-- Active servers count
+### Environment Variables
+
+- `MCP_REGISTRY_URL` - Registry backend URL (default: http://localhost:8080)
+- `PORT` - Server port (default: 5000, Cloud Run sets this automatically)
+- `HOST` - Bind address (default: localhost for local, 0.0.0.0 for Cloud Run)
+
+### API Proxy
+
+The Python server proxies requests to avoid CORS issues:
+
+- `/api/*` → `{REGISTRY_URL}/v0/*`
+- `/github/*` → `https://github.com/login/*`
+
+## Usage
+
+### Browse Servers
+
+1. Open the UI in your browser
+2. Click "Refresh" to load servers from the registry
+3. Use the search box to filter servers
+4. Click "Get Integration JSON" to see how to use a server
+
+### Register a Server
+
+1. Click "Login with GitHub" (required)
+2. Authorize the app
+3. Click "Register New MCP Server"
+4. Fill in the form:
+   - **Server Name**: e.g., `io.github.username/server-name`
+   - **Server Title**: Display name
+   - **Description**: What the server does
+   - **Version**: Semantic version (e.g., 1.0.0)
+   - **Server Type**: Remote or Package-based
+5. Click "Generate server.json"
+6. Click "Publish Now" to publish directly
+
+### Server Types
+
+**Remote Server (SSE/HTTP)**:
+- For servers hosted at a URL
+- Requires a publicly accessible endpoint
+- Example: `https://api.example.com/mcp`
+
+**Package-based (NPM/PyPI)**:
+- For servers distributed as packages
+- Requires package to exist in registry
+- Example: `@username/package-name`
 
 ## Troubleshooting
 
-**"Failed to load servers" error:**
-- Check the `MCP_REGISTRY_URL` in your `.env` file
-- Make sure your registry is running at the configured URL
-- For local: `curl http://localhost:8080/v0/servers`
-- For Cloud Run: `curl https://your-registry-url.run.app/v0/health`
+### Can't connect to registry
 
-**Port 5000 already in use:**
-- Edit `server.py` and change `PORT = 5000` to another port
-- Update the URL you visit in your browser
+Check the registry URL:
+```bash
+# Local
+curl http://localhost:8080/v0/servers
 
-**CORS errors:**
-- Make sure you're accessing via `http://localhost:5000`
-- Don't open `index.html` directly (file://)
-- The Python server handles CORS automatically
+# Cloud Run
+curl https://your-registry-url/v0/servers
+```
 
-## Customization
+### GitHub login not working
 
-### Change Port:
-Edit `server.py`, line: `PORT = 5000`
+1. Verify GitHub OAuth app is configured
+2. Check callback URL matches your UI URL
+3. Check browser console for errors
 
-### Change Registry URL:
-Edit `.env` file and update `MCP_REGISTRY_URL`
+### Server registration fails
 
-### Styling:
-Modify `styles.css` to change colors, layout, etc.
+1. Check you're logged in with GitHub
+2. Verify your namespace matches your GitHub username
+3. For remote servers, ensure URL is accessible
+4. For packages, ensure package exists in NPM/PyPI
 
-## Stop the Server
+### CORS errors
 
-Press `Ctrl+C` in the terminal where the server is running.
+The UI should proxy all requests through the Python server. If you see CORS errors:
+1. Ensure you're accessing the UI through the Python server (not opening index.html directly)
+2. Check that `MCP_REGISTRY_URL` is set correctly
+
+## Development
+
+### Adding Features
+
+1. Update `app.js` for frontend changes
+2. Update `server.py` for backend/proxy changes
+3. Update `styles.css` for styling
+4. Test locally before deploying
+
+### Testing
+
+```bash
+# Start local registry
+docker-compose up -d
+
+# Start UI
+python server.py
+
+# Open browser
+open http://localhost:5000
+```
+
+## Production Considerations
+
+- The UI is stateless and scales horizontally
+- All data is stored in the registry backend
+- Authentication tokens are stored in browser localStorage
+- The Python server is lightweight and efficient
+
+## Security
+
+- GitHub OAuth for authentication
+- JWT tokens for API access
+- HTTPS enforced in production (Cloud Run)
+- No sensitive data stored in UI
+
+## Cost
+
+When deployed to Cloud Run:
+- Scales to zero when idle
+- ~$0-5/month for typical usage
+- No database or storage costs
+
+## Support
+
+For issues or questions:
+1. Check [DEPLOYMENT.md](DEPLOYMENT.md)
+2. Review Cloud Run logs
+3. Check the main project documentation
+
+## License
+
+See the main project LICENSE file.

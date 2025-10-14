@@ -1,0 +1,38 @@
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud for the MCP Collection UI
+
+.gcloudignore
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+DEPLOYMENT.md
+README.md
+
+# Config files not needed in container
+.env
+.env.example
+
+# Build files
+cloudbuild.yaml.backup

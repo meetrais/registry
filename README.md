@@ -1,52 +1,150 @@
 # Private MCP Registry
 
-A self-hosted private registry for Model Context Protocol (MCP) servers. This fork is configured to run as a **private registry** without seeding from public MCP servers.
+A complete, self-hosted registry system for [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers. Run your own private catalog of MCP servers with full control over publishing, authentication, and access.
 
-## What is This?
+## 🎯 Overview
 
-This is a complete MCP registry system that you can run locally or deploy privately. It allows you to:
-- Host your own private catalog of MCP servers
-- Control who can publish and access servers
-- Keep your MCP infrastructure completely private
-- Avoid dependencies on public registries
+This is a production-ready MCP registry that you can run locally or deploy to the cloud. It provides:
 
-## Quick Start
+- **🏠 Private Hosting** - Keep your MCP infrastructure completely private
+- **🔐 Secure Authentication** - GitHub OAuth, DNS, HTTP, or anonymous auth
+- **🌐 Web Interface** - Beautiful UI for browsing and managing servers
+- **📦 Multi-Package Support** - NPM, PyPI, NuGet, Docker, MCPB, and remote servers
+- **☁️ Cloud Ready** - Deploy to Google Cloud Run with one command
+- **🔧 Publisher CLI** - Easy-to-use tool for publishing servers
+- **📊 Full API** - RESTful API for programmatic access
+
+### What is MCP?
+
+The [Model Context Protocol (MCP)](https://modelcontextprotocol.io) is an open standard that enables AI assistants to securely connect to external data sources and tools. This registry helps you catalog and distribute your MCP servers.
+
+## 📖 Table of Contents
+
+- [Architecture](#️-architecture)
+- [Quick Start](#-quick-start)
+- [Key Features](#-key-features)
+- [Example: Sample Server](#-example-sample-mcp-server)
+- [Publishing Servers](#-publishing-your-mcp-servers)
+- [Authentication Methods](#authenticate)
+- [Configuration](#️-configuration)
+- [GCP Deployment](#-gcp-deployment)
+- [Troubleshooting](#-troubleshooting)
+- [Documentation](#-documentation)
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    MCP Registry Ecosystem                        │
+└─────────────────────────────────────────────────────────────────┘
+
+    Developer Workflow                Registry System
+    ─────────────────                ───────────────
+
+┌─────────────────┐                 ┌──────────────────┐
+│  Create Server  │                 │   Registry API   │
+│  (MCP_Servers/) │                 │   (Go Backend)   │
+└────────┬────────┘                 │   Port: 8080     │
+         │                           └────────┬─────────┘
+         │                                    │
+         ▼                                    │
+┌─────────────────┐                          │
+│ Publisher CLI   │──────Publish────────────▶│
+│ (Authenticate)  │                           │
+└─────────────────┘                          │
+                                              ▼
+    User Interface                   ┌──────────────────┐
+    ──────────────                   │   PostgreSQL     │
+                                     │    Database      │
+┌─────────────────┐                  └──────────────────┘
+│ Collection UI   │◀────Browse────────────┘
+│ (Web Browser)   │
+│  Port: 5000     │
+└─────────────────┘
+
+┌─────────────────┐
+│  MCP Client     │──────Use────────▶ Published Servers
+│  (AI Assistant) │
+└─────────────────┘
+```
+
+### Components
+
+| Component | Description | Technology | Port |
+|-----------|-------------|------------|------|
+| **Registry API** | Core backend service | Go | 8080 |
+| **PostgreSQL** | Server metadata storage | PostgreSQL 16 | 5432 |
+| **Collection UI** | Web interface | Python + HTML/JS | 5000 |
+| **Publisher CLI** | Publishing tool | Go | - |
+| **MCP Servers** | Your MCP implementations | Any | Various |
+
+### Project Structure
+
+```
+registry/
+├── cmd/
+│   ├── publisher/          # Publisher CLI tool
+│   └── registry/           # Registry API server
+├── internal/               # Go backend code
+│   ├── api/               # REST API handlers
+│   ├── auth/              # Authentication logic
+│   ├── database/          # Database layer
+│   └── validators/        # Server validation
+├── MCP_Collection/        # Web UI for browsing
+│   ├── server.py          # Python HTTP server
+│   ├── index.html         # UI interface
+│   ├── app.js             # Frontend logic
+│   └── styles.css         # Styling
+├── MCP_Servers/           # Example MCP servers
+│   └── simple-calculator/ # Sample server
+├── MCP_Client/            # AI test client
+├── docs/                  # Documentation
+├── docker-compose.yml     # Local development setup
+└── cloudbuild.yaml        # GCP deployment config
+```
+
+## 🚀 Quick Start
+
+Get your private MCP registry running in 5 minutes.
 
 ### Prerequisites
 
-- **Docker Desktop** - For running the registry and PostgreSQL
-- **Go 1.24+** - For building the publisher CLI tool
+| Requirement | Version | Purpose |
+|------------|---------|---------|
+| **Docker Desktop** | Latest | Run registry and database |
+| **Go** | 1.24+ | Build publisher CLI |
+| **Python** | 3.11+ | Run web UI (optional) |
+| **Git** | Any | Clone repository |
 
-### Step 1: Start the Private Registry
+### Local Setup
 
-1. Clone this repository:
+#### 1. Clone and Start
+
 ```bash
+# Clone the repository
 git clone https://github.com/meetrais/registry.git
 cd registry
-```
 
-2. Start the registry with Docker Compose:
-```bash
+# Start the registry with Docker Compose
 docker compose up -d
 ```
 
 This starts:
-- **Registry API** at `http://localhost:8080`
-- **PostgreSQL database** for storing server metadata
+- ✅ **Registry API** at `http://localhost:8080`
+- ✅ **PostgreSQL database** for server metadata
 
-3. Verify it's running:
+#### 2. Verify Registry
+
 ```bash
 curl http://localhost:8080/v0/servers
 ```
 
-You should see an empty registry:
+Expected response (empty registry):
 ```json
 {"servers":[],"metadata":{"count":0}}
 ```
 
-### Step 2: Build the Publisher CLI
-
-Build the MCP publisher tool:
+#### 3. Build Publisher CLI
 
 **Windows:**
 ```powershell
@@ -58,12 +156,32 @@ go build -o bin/mcp-publisher.exe ./cmd/publisher
 go build -o bin/mcp-publisher ./cmd/publisher
 ```
 
-Verify it works:
+**Verify:**
 ```bash
 ./bin/mcp-publisher --help
 ```
 
-## Example: Sample MCP Server
+#### 4. Start Web UI (Optional)
+
+```bash
+cd MCP_Collection
+python server.py
+```
+
+Visit **http://localhost:5000** to browse your registry with a visual interface.
+
+### What's Running?
+
+After setup, you have:
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Registry API | http://localhost:8080 | REST API for server management |
+| Web UI | http://localhost:5000 | Browse and register servers |
+| PostgreSQL | localhost:5432 | Database (internal) |
+| API Docs | http://localhost:8080/docs | Interactive API documentation |
+
+## 💡 Example: Sample MCP Server
 
 This repository includes a sample MCP server at `MCP_Servers/simple-calculator/` to help you get started.
 
@@ -153,7 +271,7 @@ Visit **http://localhost:5000** to see your servers in a visual interface with s
 
 ---
 
-## Publishing Your MCP Servers
+## 📤 Publishing Your MCP Servers
 
 ### Create a server.json File
 
@@ -447,131 +565,292 @@ Your private registry supports:
 - **📁 MCPB packages** - MCP binary packages
 - **🌐 Remote servers** - Hosted web services
 
-## Configuration
+## ⚙️ Configuration
 
 ### Environment Variables
 
-Key configuration settings in `.env`:
+Configure the registry via `.env` file:
 
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_REGISTRY_SERVER_ADDRESS` | `:8080` | Server bind address |
+| `MCP_REGISTRY_DATABASE_URL` | `postgres://...` | PostgreSQL connection string |
+| `MCP_REGISTRY_SEED_FROM` | `` | Public registry URL (empty for private) |
+| `MCP_REGISTRY_GITHUB_CLIENT_ID` | - | GitHub OAuth client ID |
+| `MCP_REGISTRY_GITHUB_CLIENT_SECRET` | - | GitHub OAuth client secret |
+| `MCP_REGISTRY_ENABLE_ANONYMOUS_AUTH` | `false` | Allow anonymous publishing |
+| `MCP_REGISTRY_ENABLE_REGISTRY_VALIDATION` | `true` | Validate package existence |
+| `MCP_REGISTRY_JWT_PRIVATE_KEY` | - | JWT signing key (32-byte hex) |
+
+### Docker Compose
+
+The `docker-compose.yml` is pre-configured for private use:
+- ✅ No public server seeding
+- ✅ PostgreSQL with persistent storage
+- ✅ Registry API on port 8080
+- ✅ Health checks enabled
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v0/servers` | GET | List all servers |
+| `/v0/servers?search=keyword` | GET | Search servers |
+| `/v0/servers/{name}/versions/{version}` | GET | Get specific server |
+| `/v0/publish` | POST | Publish a server (auth required) |
+| `/v0/ping` | GET | Health check |
+| `/v0/health` | GET | Detailed health status |
+| `/docs` | GET | Interactive API documentation |
+
+## 🔄 Private vs Public Registry
+
+| Feature | Private Registry (This) | Public Registry |
+|---------|------------------------|-----------------|
+| **Server Catalog** | Empty by default | Pre-seeded with public servers |
+| **Access Control** | You control everything | Open to public |
+| **Hosting** | Self-hosted (local/cloud) | Hosted by Anthropic |
+| **Authentication** | GitHub, DNS, HTTP, Anonymous | GitHub only |
+| **Data Privacy** | Completely private | Public catalog |
+| **Customization** | Full control | Limited |
+| **Cost** | $0 (local) or ~$5-25/month (cloud) | Free |
+| **Use Case** | Private/corporate use | Public sharing |
+
+**Key Configuration Difference:**
 ```bash
-# Server configuration
-MCP_REGISTRY_SERVER_ADDRESS=:8080
-
-# Database (for Docker Compose)
-MCP_REGISTRY_DATABASE_URL=postgres://mcpregistry:mcpregistry@postgres:5432/mcp-registry
-
-# Seed from public registry (DISABLED for private registry)
+# Private Registry (this project)
 MCP_REGISTRY_SEED_FROM=
 
-# GitHub OAuth for authentication
-MCP_REGISTRY_GITHUB_CLIENT_ID=Iv23licy3GSiM9Km5jtd
-MCP_REGISTRY_GITHUB_CLIENT_SECRET=0e8db54879b02c29adef51795586f3c510a9341d
-
-# Anonymous auth (useful for testing)
-MCP_REGISTRY_ENABLE_ANONYMOUS_AUTH=false
+# Public Registry
+MCP_REGISTRY_SEED_FROM=https://registry.modelcontextprotocol.io/v0/servers
 ```
 
-### Docker Compose Configuration
+## 📁 Project Directories
 
-The `docker-compose.yml` is pre-configured for private registry use:
-- No public server seeding (empty `MCP_REGISTRY_SEED_FROM`)
-- PostgreSQL with ephemeral storage
-- Registry API on port 8080
+| Directory | Purpose | Documentation |
+|-----------|---------|---------------|
+| `MCP_Servers/` | Example MCP servers and templates | [README](MCP_Servers/README.md) |
+| `MCP_Collection/` | Web UI for browsing registry | [README](MCP_Collection/README.md) |
+| `MCP_Client/` | AI-powered test client | [README](MCP_Client/README.md) |
+| `cmd/` | CLI tools (publisher, registry) | - |
+| `internal/` | Go backend implementation | - |
+| `docs/` | Detailed documentation | - |
+| `deploy/` | Deployment configurations | - |
 
-## API Endpoints
+## 🔑 Key Features
 
-Once running, your registry provides:
+### Private by Default
+- ✅ **Starts empty** - No public servers seeded
+- ✅ **Local first** - Runs on localhost by default
+- ✅ **Full control** - You manage all published servers
+- ✅ **No external dependencies** - Completely self-contained
 
-- **List all servers:** `GET http://localhost:8080/v0/servers`
-- **Search servers:** `GET http://localhost:8080/v0/servers?search=keyword`
-- **Get specific server:** `GET http://localhost:8080/v0/servers/<namespace>/<identifier>`
-- **API documentation:** `http://localhost:8080/docs`
+### Authentication & Security
+- 🔐 **GitHub OAuth** - Authenticate with your GitHub account
+- 🌐 **DNS Verification** - Prove domain ownership via DNS records
+- 📄 **HTTP Verification** - Verify domain via web file
+- 🧪 **Anonymous Mode** - For testing (disable in production)
+- 🔒 **Namespace-based Authorization** - Granular access control
 
-## Architecture
+### Package Support
+- 📦 **NPM** - Node.js packages
+- 🐍 **PyPI** - Python packages
+- 📋 **NuGet** - .NET packages
+- 🐳 **OCI/Docker** - Container images
+- 📁 **MCPB** - MCP binary packages
+- 🌐 **Remote Servers** - HTTP/SSE hosted services
 
-```
-┌──────────────────────────────────────────────────┐
-│                Registry Ecosystem                 │
-├──────────────────────────────────────────────────┤
-│                                                   │
-│  ┌─────────────┐         ┌──────────────┐       │
-│  │ MCP Servers │────────▶│  Publisher   │       │
-│  │  (Create)   │         │     CLI      │       │
-│  └─────────────┘         └──────┬───────┘       │
-│                                  │               │
-│                                  ▼               │
-│                         ┌─────────────────┐     │
-│  ┌─────────────┐       │  Registry API   │     │
-│  │ Collection  │◀──────│  (Port 8080)    │     │
-│  │  Web UI     │       └────────┬────────┘     │
-│  │ (Port 5000) │                │               │
-│  └─────────────┘                ▼               │
-│                         ┌─────────────────┐     │
-│  ┌─────────────┐       │   PostgreSQL    │     │
-│  │ MCP Client  │       │    Database     │     │
-│  │ (Test/Use)  │       └─────────────────┘     │
-│  └──────┬──────┘                                │
-│         │                                        │
-│         └────────────(connects to servers)      │
-│                                                  │
-└──────────────────────────────────────────────────┘
-```
+### Developer Experience
+- 🖥️ **Web UI** - Beautiful interface for browsing servers
+- 🛠️ **CLI Tool** - Easy publishing workflow
+- 📚 **API Documentation** - Interactive docs at `/docs`
+- 🔍 **Search & Filter** - Find servers quickly
+- 📊 **Metadata Display** - Rich server information
 
-**Components:**
-- **MCP_Servers/** - Create and develop your MCP servers
-- **Publisher CLI** - Authenticate and publish servers to registry
-- **Registry API** - Central server catalog (port 8080)
-- **PostgreSQL** - Server metadata storage
-- **Collection UI** - Web interface for browsing registry (port 5000)
-- **MCP Client** - Example AI agent for testing servers
+### Production Ready
+- ☁️ **Cloud Deployment** - One-command deploy to GCP
+- 📈 **Auto-scaling** - Scales with demand
+- 🔄 **High Availability** - Managed database
+- 📝 **Comprehensive Logging** - Full observability
+- 💰 **Cost Effective** - ~$5-25/month on GCP
 
-**Directories:**
-- `MCP_Servers/` - Example servers and templates ([README](MCP_Servers/README.md))
-- `MCP_Collection/` - Web UI for registry ([README](MCP_Collection/README.md))
-- `MCP_Client/` - AI-powered test client ([README](MCP_Client/README.md))
+## ☁️ GCP Deployment
 
-## Key Differences from Public Registry
+Deploy both the Registry API and Collection UI to Google Cloud Run with managed PostgreSQL and automatic scaling.
 
-This private registry is configured to:
+### Prerequisites
 
-✅ **Start empty** - No public servers are seeded  
-✅ **Stay private** - Only accessible on localhost by default  
-✅ **Full control** - You control all published servers  
-✅ **Complete features** - All authentication and validation features work  
+- Google Cloud Project created
+- `gcloud` CLI installed and authenticated
+- Cloud SQL, Secret Manager, and required APIs enabled
 
-The key change is setting `MCP_REGISTRY_SEED_FROM` to empty in both `.env` and `docker-compose.yml`.
+### Quick Setup
 
-## Advanced Usage
-
-### Production Deployment
-
-#### Google Cloud Platform (Cloud Run)
-
-For deploying to Google Cloud Run with Cloud SQL and Secret Manager, see the comprehensive guide:
-
-📖 **[DEPLOYMENT_SETUP.md](DEPLOYMENT_SETUP.md)** - Complete GCP deployment instructions
-
-This guide covers:
-- Cloud SQL PostgreSQL setup
-- Secret Manager configuration for credentials
-- Cloud Build and Cloud Run deployment
-- GitHub OAuth integration
-- Troubleshooting common deployment issues
-
-**Quick GCP Deployment:**
+1. **Enable required APIs:**
 ```bash
-# After completing setup steps in DEPLOYMENT_SETUP.md
+gcloud services enable \
+    cloudbuild.googleapis.com \
+    run.googleapis.com \
+    sqladmin.googleapis.com \
+    secretmanager.googleapis.com \
+    containerregistry.googleapis.com
+```
+
+2. **Create Cloud SQL database:**
+```bash
+gcloud sql instances create mcp-registry-db \
+    --database-version=POSTGRES_15 \
+    --tier=db-f1-micro \
+    --region=us-central1
+
+gcloud sql databases create mcp-registry --instance=mcp-registry-db
+gcloud sql users create mcpregistry --instance=mcp-registry-db --password=YOUR_PASSWORD
+```
+
+3. **Create secrets:**
+```bash
+# Database URL
+DB_URL="postgres://mcpregistry:YOUR_PASSWORD@/mcp-registry?host=/cloudsql/PROJECT_ID:us-central1:mcp-registry-db"
+echo -n "$DB_URL" | gcloud secrets create database-url --data-file=-
+
+# JWT key
+JWT_KEY=$(openssl rand -hex 32)
+echo -n "$JWT_KEY" | gcloud secrets create jwt-private-key --data-file=-
+
+# GitHub OAuth (optional)
+echo -n "YOUR_GITHUB_CLIENT_ID" | gcloud secrets create github-client-id --data-file=-
+echo -n "YOUR_GITHUB_CLIENT_SECRET" | gcloud secrets create github-client-secret --data-file=-
+```
+
+4. **Grant IAM permissions:**
+```bash
+PROJECT_NUMBER=$(gcloud projects describe PROJECT_ID --format="value(projectNumber)")
+
+for SECRET in database-url jwt-private-key github-client-id github-client-secret; do
+  gcloud secrets add-iam-policy-binding $SECRET \
+    --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor"
+done
+```
+
+### Deploy Registry
+
+From the project root:
+
+```bash
 gcloud builds submit --config cloudbuild.yaml
 ```
 
-Your registry will be deployed to Cloud Run with:
-- ✅ Managed PostgreSQL database (Cloud SQL)
-- ✅ Secure credential storage (Secret Manager)
-- ✅ Auto-scaling (0-10 instances)
-- ✅ HTTPS endpoint
-- ✅ GitHub OAuth authentication
+Get the registry URL:
+```bash
+REGISTRY_URL=$(gcloud run services describe mcp-registry --region=us-central1 --format="value(status.url)")
+echo "Registry URL: $REGISTRY_URL"
+```
 
-#### Other Production Deployments
+### Deploy Collection UI
+
+1. **Update UI configuration:**
+
+Edit `MCP_Collection/cloudbuild.yaml` and set `_REGISTRY_URL` to your registry URL.
+
+2. **Deploy from MCP_Collection directory:**
+
+```bash
+cd MCP_Collection
+gcloud builds submit --config cloudbuild.yaml
+```
+
+**Important:** You must run this from the `MCP_Collection` directory because the root `.gcloudignore` excludes it.
+
+3. **Enable public access:**
+
+```bash
+gcloud run services add-iam-policy-binding mcp-collection-ui \
+  --region=us-central1 \
+  --member="allUsers" \
+  --role="roles/run.invoker"
+```
+
+4. **Get UI URL:**
+
+```bash
+UI_URL=$(gcloud run services describe mcp-collection-ui --region=us-central1 --format="value(status.url)")
+echo "UI URL: $UI_URL"
+```
+
+### Deployed Services
+
+After deployment, you'll have:
+
+- **Registry API**: `https://mcp-registry-xxxxx-uc.a.run.app`
+  - REST API for server management
+  - Connected to Cloud SQL PostgreSQL
+  - Auto-scales 1-10 instances
+
+- **Collection UI**: `https://mcp-collection-ui-xxxxx-uc.a.run.app`
+  - Web interface for browsing servers
+  - GitHub OAuth login
+  - Server registration form
+  - Auto-scales 0-5 instances (scales to zero)
+
+### Update GitHub OAuth
+
+After deployment, update your GitHub OAuth app:
+
+1. Go to GitHub → Settings → Developer settings → OAuth Apps
+2. Update callback URL to: `https://YOUR_UI_URL/`
+3. Save changes
+
+### Updating Deployments
+
+**Update Registry:**
+```bash
+cd /path/to/registry
+gcloud builds submit --config cloudbuild.yaml
+```
+
+**Update UI:**
+```bash
+cd /path/to/registry/MCP_Collection
+gcloud builds submit --config cloudbuild.yaml
+```
+
+### Monitoring
+
+```bash
+# View registry logs
+gcloud run services logs read mcp-registry --region=us-central1 --limit=50 --follow
+
+# View UI logs
+gcloud run services logs read mcp-collection-ui --region=us-central1 --limit=50 --follow
+
+# List all services
+gcloud run services list --region=us-central1
+```
+
+### Cost Estimate
+
+- **Registry**: ~$5-20/month (includes Cloud SQL db-f1-micro)
+- **UI**: ~$0-5/month (scales to zero when idle)
+- **Total**: ~$5-25/month for low-medium usage
+
+### Troubleshooting
+
+**Registry won't start:**
+- Check Cloud SQL is running: `gcloud sql instances describe mcp-registry-db`
+- Verify secrets exist: `gcloud secrets list`
+- Check logs: `gcloud run services logs read mcp-registry --region=us-central1 --limit=50`
+
+**UI deployment fails:**
+- Ensure you're running from `MCP_Collection` directory
+- Verify registry URL is set in `cloudbuild.yaml`
+- Check build logs: `gcloud builds list --limit=5`
+
+**UI shows 403 errors:**
+- Run: `gcloud run services add-iam-policy-binding mcp-collection-ui --region=us-central1 --member="allUsers" --role="roles/run.invoker"`
+
+For detailed setup instructions, see [DEPLOYMENT_SETUP.md](DEPLOYMENT_SETUP.md).
+
+### Other Production Deployments
 
 For other production deployment options:
 
@@ -599,14 +878,17 @@ See `docs/guides/publishing/publish-server.md` for detailed requirements.
 - `com.yourcompany/*` - Requires DNS/HTTP verification of domain ownership
 - `io.modelcontextprotocol.anonymous/*` - Available when anonymous auth is enabled
 
-## Documentation
+## 📚 Documentation
 
-- **Publishing Guide:** `docs/guides/publishing/publish-server.md`
-- **API Reference:** `docs/reference/api/`
-- **Server.json Schema:** `docs/reference/server-json/`
-- **Architecture:** `docs/explanations/tech-architecture.md`
+| Document | Description |
+|----------|-------------|
+| [Publishing Guide](docs/guides/publishing/publish-server.md) | How to publish servers |
+| [API Reference](docs/reference/api/) | Complete API documentation |
+| [Server.json Schema](docs/reference/server-json/) | Server configuration format |
+| [Architecture](docs/explanations/tech-architecture.md) | Technical architecture details |
+| [DEPLOYMENT_SETUP.md](DEPLOYMENT_SETUP.md) | Detailed GCP deployment guide |
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 ### Registry won't start
 - Ensure Docker Desktop is running
@@ -622,18 +904,29 @@ See `docs/guides/publishing/publish-server.md` for detailed requirements.
 - If running outside Docker, update `MCP_REGISTRY_DATABASE_URL` in `.env`
 - For Docker Compose, ensure the postgres service is healthy
 
-## Contributing
+## 🤝 Contributing
 
 This is a fork of the official MCP registry configured for private use. For contributions to the upstream project, see [modelcontextprotocol/registry](https://github.com/modelcontextprotocol/registry).
 
-## License
+## 📄 License
 
 See [LICENSE](LICENSE) file for details.
 
-## Support
+## 💬 Support
 
-For issues specific to this private registry setup, please open an issue in this repository.
+**For this private registry:**
+- Open an issue in this repository
+- Check the [Troubleshooting](#-troubleshooting) section
 
-For general MCP questions, see:
+**For general MCP questions:**
 - [MCP Documentation](https://modelcontextprotocol.io)
 - [MCP Discord](https://modelcontextprotocol.io/community/communication)
+- [MCP GitHub](https://github.com/modelcontextprotocol)
+
+## ⭐ Acknowledgments
+
+Built on the [Model Context Protocol](https://modelcontextprotocol.io) standard by Anthropic.
+
+---
+
+**Made with ❤️ for the MCP community**
