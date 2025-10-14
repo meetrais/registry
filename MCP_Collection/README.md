@@ -12,7 +12,27 @@ A beautiful web interface to view MCP servers from your private registry.
 
 ## Quick Start
 
-### Step 1: Start the UI Server
+### Step 1: Install Dependencies
+
+The server requires `python-dotenv` to load configuration from the `.env` file:
+
+```bash
+pip install python-dotenv
+```
+
+### Step 2: Configure Registry URL
+
+Edit the `.env` file in the `MCP_Collection` directory to point to your registry:
+
+```bash
+# For local development
+MCP_REGISTRY_URL=http://localhost:8080
+
+# For Cloud Run deployment
+MCP_REGISTRY_URL=https://your-registry-url.run.app
+```
+
+### Step 3: Start the UI Server
 
 Navigate to the MCP_Collection directory and run:
 
@@ -23,29 +43,34 @@ python server.py
 
 The server will start at **http://localhost:5000**
 
-### Step 2: Open in Browser
+### Step 4: Open in Browser
 
 Visit: **http://localhost:5000**
 
-### Step 3: View Your Servers
+### Step 5: View Your Servers
 
 The UI will automatically:
-- Fetch servers from your registry at `http://localhost:8080`
+- Fetch servers from your configured registry (check `.env` file)
 - Display them in beautiful cards
 - Show statistics and metadata
 
 ## How It Works
 
-1. **server.py** - Python HTTP server that:
+1. **.env** - Configuration file that:
+   - Stores the registry URL
+   - Can be customized for local or cloud deployment
+
+2. **server.py** - Python HTTP server that:
+   - Loads configuration from `.env` file
    - Serves the UI files (HTML, CSS, JS)
    - Proxies API requests to avoid CORS issues
    - Runs on port 5000
 
-2. **index.html** - Main UI structure
+3. **index.html** - Main UI structure
 
-3. **styles.css** - Beautiful styling with gradient background
+4. **styles.css** - Beautiful styling with gradient background
 
-4. **app.js** - JavaScript that:
+5. **app.js** - JavaScript that:
    - Fetches servers from `/api/servers`
    - Displays them in cards
    - Handles search and refresh
@@ -83,8 +108,10 @@ Registry API (localhost:8080/v0/servers)
 ## Troubleshooting
 
 **"Failed to load servers" error:**
-- Make sure your registry is running at `http://localhost:8080`
-- Check with: `curl http://localhost:8080/v0/servers`
+- Check the `MCP_REGISTRY_URL` in your `.env` file
+- Make sure your registry is running at the configured URL
+- For local: `curl http://localhost:8080/v0/servers`
+- For Cloud Run: `curl https://your-registry-url.run.app/v0/health`
 
 **Port 5000 already in use:**
 - Edit `server.py` and change `PORT = 5000` to another port
@@ -100,8 +127,8 @@ Registry API (localhost:8080/v0/servers)
 ### Change Port:
 Edit `server.py`, line: `PORT = 5000`
 
-### Change API Endpoint:
-Edit `server.py`, line with `urllib.request.urlopen(...)`
+### Change Registry URL:
+Edit `.env` file and update `MCP_REGISTRY_URL`
 
 ### Styling:
 Modify `styles.css` to change colors, layout, etc.

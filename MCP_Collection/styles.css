@@ -17,7 +17,9 @@ body {
 }
 
 header {
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     color: white;
     margin-bottom: 30px;
 }
@@ -25,6 +27,117 @@ header {
 header h1 {
     font-size: 2.5rem;
     margin-bottom: 10px;
+}
+
+.header-left h1 {
+    margin: 0;
+}
+
+.header-left .subtitle {
+    margin: 0.5rem 0 0 0;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.auth-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-auth {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-auth:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-auth-small {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.btn-auth-small:hover {
+    background: #c0392b;
+}
+
+#userInfo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+}
+
+#userName {
+    font-weight: 500;
+    color: white;
+}
+
+.btn-success {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-success:hover {
+    background: #229954;
+}
+
+.btn-success:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}
+
+.publish-status {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.publish-status.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.publish-status.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.publish-status.loading {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
 }
 
 .subtitle {
@@ -499,4 +612,123 @@ header h1 {
     .modal-body pre {
         font-size: 0.8rem;
     }
+}
+
+/* GitHub Login Modal Styles */
+.auth-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.auth-step {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.step-number {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.step-content {
+    flex: 1;
+}
+
+.step-content p {
+    margin: 0 0 8px 0;
+    color: #555;
+}
+
+.github-link {
+    display: inline-block;
+    padding: 10px 15px;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    color: #0969da;
+    text-decoration: none;
+    word-break: break-all;
+    transition: all 0.2s;
+}
+
+.github-link:hover {
+    background: #e7edf3;
+    border-color: #0969da;
+}
+
+.device-code-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.device-code {
+    font-family: 'Courier New', monospace;
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 4px;
+    padding: 15px 20px;
+    background: #f6f8fa;
+    border: 2px solid #d0d7de;
+    border-radius: 8px;
+    color: #24292f;
+    user-select: all;
+    flex: 1;
+}
+
+.copy-code-btn {
+    padding: 10px 15px;
+    background: #2ea44f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.copy-code-btn:hover {
+    background: #2c974b;
+}
+
+.auth-status-message {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    background: #f6f8fa;
+    border-radius: 6px;
+    margin-top: 5px;
+}
+
+.auth-status-message.success {
+    background: #dafbe1;
+    color: #1a7f37;
+}
+
+.auth-status-message.error {
+    background: #ffebe9;
+    color: #cf222e;
+}
+
+.status-icon {
+    font-size: 20px;
+}
+
+#authStatusText {
+    font-size: 14px;
+    font-weight: 500;
 }

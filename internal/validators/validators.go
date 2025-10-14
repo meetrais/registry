@@ -556,6 +556,14 @@ func validateRemoteURLMatchesNamespace(remoteURL, namespace string) error {
 		return nil
 	}
 
+	// Skip validation for private IP addresses (RFC 1918)
+	// 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+	if strings.HasPrefix(hostname, "10.") ||
+		strings.HasPrefix(hostname, "192.168.") ||
+		(strings.HasPrefix(hostname, "172.") && len(hostname) > 4) {
+		return nil
+	}
+
 	// Extract publisher domain from reverse-DNS namespace
 	publisherDomain := extractPublisherDomainFromNamespace(namespace)
 	if publisherDomain == "" {

@@ -9,8 +9,19 @@
 <body>
     <div class="container">
         <header>
-            <h1>🔧 MCP Server Collection</h1>
-            <p class="subtitle">Private MCP Registry</p>
+            <div class="header-left">
+                <h1>🔧 MCP Server Collection</h1>
+                <p class="subtitle">Private MCP Registry</p>
+            </div>
+            <div class="header-right">
+                <div id="authStatus" class="auth-status">
+                    <button id="loginBtn" class="btn-auth" style="display: none;">🔐 Login with GitHub</button>
+                    <div id="userInfo" style="display: none;">
+                        <span id="userName"></span>
+                        <button id="logoutBtn" class="btn-auth-small">Logout</button>
+                    </div>
+                </div>
+            </div>
         </header>
 
         <div class="search-bar">
@@ -116,17 +127,20 @@
                     <div class="form-actions">
                         <button type="button" class="btn-secondary" onclick="closeSubmitModal()">Cancel</button>
                         <button type="submit" class="btn-primary">Generate server.json</button>
+                        <button type="button" id="publishDirectBtn" class="btn-success" style="display: none;">📤 Publish to Registry</button>
                     </div>
                 </form>
 
                 <div id="serverJsonOutput" style="display: none;">
                     <h3>Generated server.json</h3>
-                    <p class="info-text">Copy this content to your <code>server.json</code> file and use the MCP publisher CLI to publish:</p>
+                    <p class="info-text" id="outputMessage">Copy this content to your <code>server.json</code> file and use the MCP publisher CLI to publish:</p>
                     <pre><code id="generatedJson"></code></pre>
                     <div class="form-actions">
                         <button type="button" class="btn-secondary" onclick="closeSubmitModal()">Close</button>
                         <button type="button" class="btn-primary" onclick="copyServerJson()">Copy to Clipboard</button>
+                        <button type="button" id="publishNowBtn" class="btn-success" style="display: none;">📤 Publish Now</button>
                     </div>
+                    <div id="publishStatus" class="publish-status" style="display: none;"></div>
                 </div>
             </div>
         </div>
@@ -146,6 +160,52 @@
             <div class="modal-footer">
                 <button class="copy-btn" onclick="copyCode()">Copy JSON</button>
                 <button class="close-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GitHub Login Modal -->
+    <div id="githubLoginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔐 GitHub Authentication</h2>
+                <span class="close" onclick="closeGitHubLoginModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="githubAuthSteps" class="auth-steps">
+                    <div class="auth-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <p><strong>Visit GitHub Authorization Page:</strong></p>
+                            <a id="githubVerifyLink" href="#" target="_blank" class="github-link">
+                                <span id="githubVerifyUrl"></span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="auth-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <p><strong>Enter this code:</strong></p>
+                            <div class="device-code-container">
+                                <div class="device-code" id="githubDeviceCode"></div>
+                                <button class="copy-code-btn" onclick="copyDeviceCode()">📋 Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="auth-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <p><strong>Authorize the application</strong></p>
+                            <div class="auth-status-message">
+                                <span class="status-icon" id="authStatusIcon">⏳</span>
+                                <span id="authStatusText">Waiting for authorization...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="close-btn" onclick="closeGitHubLoginModal()">Cancel</button>
             </div>
         </div>
     </div>

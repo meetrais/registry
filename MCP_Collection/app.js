@@ -2,14 +2,21 @@
 // Use proxied API endpoint to avoid CORS issues
 const REGISTRY_API = '/api/servers';
 
+// Always use the proxy to avoid CORS issues
+const REGISTRY_URL = '/api';
+
 // State
 let allServers = [];
 let filteredServers = [];
+let authToken = localStorage.getItem('mcp_auth_token');
+let userInfo = JSON.parse(localStorage.getItem('mcp_user_info') || 'null');
+let currentServerJson = null;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     loadServers();
     setupEventListeners();
+    updateAuthUI();
 });
 
 // Setup event listeners
@@ -19,6 +26,10 @@ function setupEventListeners() {
     const submitBtn = document.getElementById('submitBtn');
     const serverForm = document.getElementById('serverForm');
     const serverTypeSelect = document.getElementById('serverType');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const publishDirectBtn = document.getElementById('publishDirectBtn');
+    const publishNowBtn = document.getElementById('publishNowBtn');
 
     searchInput.addEventListener('input', (e) => {
         filterServers(e.target.value);
@@ -40,6 +51,314 @@ function setupEventListeners() {
     serverTypeSelect.addEventListener('change', (e) => {
         toggleServerTypeFields(e.target.value);
     });
+
+    loginBtn.addEventListener('click', () => {
+        loginWithGitHub();
+    });
+
+    logoutBtn.addEventListener('click', () => {
+        logout();
+    });
+
+    publishDirectBtn.addEventListener('click', () => {
+        publishServerDirect();
+    });
+
+    publishNowBtn.addEventListener('click', () => {
+        publishServerNow();
+    });
+}
+
+// Authentication functions
+function updateAuthUI() {
+    const loginBtn = document.getElementById('loginBtn');
+    const userInfo = document.getElementById('userInfo');
+    const userName = document.getElementById('userName');
+    const publishDirectBtn = document.getElementById('publishDirectBtn');
+    const publishNowBtn = document.getElementById('publishNowBtn');
+
+    if (authToken && window.userInfo) {
+        loginBtn.style.display = 'none';
+        userInfo.style.display = 'flex';
+        userName.textContent = `👤 ${window.userInfo.username || 'User'}`;
+        if (publishDirectBtn) publishDirectBtn.style.display = 'inline-block';
+        if (publishNowBtn) publishNowBtn.style.display = 'inline-block';
+    } else {
+        loginBtn.style.display = 'inline-block';
+        userInfo.style.display = 'none';
+        if (publishDirectBtn) publishDirectBtn.style.display = 'none';
+        if (publishNowBtn) publishNowBtn.style.display = 'none';
+    }
+}
+
+async function loginWithGitHub() {
+    try {
+        // Get GitHub Client ID from registry health endpoint
+        const clientID = await getGitHubClientID();
+        
+        // Start GitHub Device Flow
+        const deviceData = await requestGitHubDeviceCode(clientID);
+        
+        // Show GitHub login modal
+        showGitHubLoginModal(deviceData);
+        
+        // Poll for GitHub access token
+        const githubToken = await pollForGitHubToken(clientID, deviceData.device_code);
+        
+        // Get GitHub user info
+        const githubUser = await getGitHubUserInfo(githubToken);
+        
+        // Exchange GitHub token for registry JWT
+        const registryToken = await exchangeGitHubTokenForRegistry(githubToken);
+        
+        // Store tokens and user info
+        authToken = registryToken;
+        window.userInfo = { username: githubUser.login };
+        
+        localStorage.setItem('mcp_auth_token', authToken);
+        localStorage.setItem('mcp_user_info', JSON.stringify(window.userInfo));
+        
+        // Update status in modal
+        updateAuthStatus('✅', 'Successfully authorized!', 'success');
+        
+        // Wait a moment then close modal and update UI
+        setTimeout(() => {
+            closeGitHubLoginModal();
+            updateAuthUI();
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        updateAuthStatus('❌', `Login failed: ${error.message}`, 'error');
+    }
+}
+
+async function getGitHubUserInfo(githubToken) {
+    const response = await fetch('https://api.github.com/user', {
+        headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json'
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to get GitHub user info');
+    }
+    
+    return await response.json();
+}
+
+function showGitHubLoginModal(deviceData) {
+    const modal = document.getElementById('githubLoginModal');
+    const verifyLink = document.getElementById('githubVerifyLink');
+    const verifyUrl = document.getElementById('githubVerifyUrl');
+    const deviceCode = document.getElementById('githubDeviceCode');
+    
+    verifyLink.href = deviceData.verification_uri;
+    verifyUrl.textContent = deviceData.verification_uri;
+    deviceCode.textContent = deviceData.user_code;
+    
+    // Store device code for copying
+    window.currentDeviceCode = deviceData.user_code;
+    
+    modal.style.display = 'flex';
+}
+
+function closeGitHubLoginModal() {
+    const modal = document.getElementById('githubLoginModal');
+    modal.style.display = 'none';
+    
+    // Reset status
+    updateAuthStatus('⏳', 'Waiting for authorization...', '');
+}
+
+function updateAuthStatus(icon, message, statusClass) {
+    const statusIcon = document.getElementById('authStatusIcon');
+    const statusText = document.getElementById('authStatusText');
+    const statusMessage = document.querySelector('.auth-status-message');
+    
+    statusIcon.textContent = icon;
+    statusText.textContent = message;
+    
+    // Update status class
+    statusMessage.className = 'auth-status-message';
+    if (statusClass) {
+        statusMessage.classList.add(statusClass);
+    }
+}
+
+function copyDeviceCode() {
+    const code = window.currentDeviceCode;
+    if (code) {
+        navigator.clipboard.writeText(code).then(() => {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Copied!';
+            setTimeout(() => btn.textContent = originalText, 2000);
+        });
+    }
+}
+
+async function getGitHubClientID() {
+    const response = await fetch(`${REGISTRY_URL}/health`);
+    if (!response.ok) {
+        throw new Error('Failed to get GitHub Client ID from registry');
+    }
+    const data = await response.json();
+    if (!data.github_client_id) {
+        throw new Error('GitHub Client ID not configured in registry');
+    }
+    return data.github_client_id;
+}
+
+async function requestGitHubDeviceCode(clientID) {
+    const response = await fetch('/github/device/code', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            client_id: clientID,
+            scope: 'read:org read:user'
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to request device code from GitHub');
+    }
+    
+    return await response.json();
+}
+
+async function pollForGitHubToken(clientID, deviceCode) {
+    const maxAttempts = 60; // Poll for up to 5 minutes (60 * 5 seconds)
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+        
+        const response = await fetch('/github/oauth/access_token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                client_id: clientID,
+                device_code: deviceCode,
+                grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error === 'authorization_pending') {
+            continue; // Keep polling
+        }
+        
+        if (data.error) {
+            throw new Error(`GitHub authorization failed: ${data.error}`);
+        }
+        
+        if (data.access_token) {
+            return data.access_token;
+        }
+    }
+    
+    throw new Error('GitHub authorization timed out');
+}
+
+async function exchangeGitHubTokenForRegistry(githubToken) {
+    const response = await fetch(`${REGISTRY_URL}/auth/github-at`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            github_token: githubToken
+        })
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Token exchange failed: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data.registry_token;
+}
+
+function logout() {
+    authToken = null;
+    window.userInfo = null;
+    localStorage.removeItem('mcp_auth_token');
+    localStorage.removeItem('mcp_user_info');
+    updateAuthUI();
+    alert('Logged out successfully');
+}
+
+// Direct publishing functions
+async function publishServerDirect() {
+    if (!authToken) {
+        alert('⚠️ Please login with GitHub first to publish directly');
+        return;
+    }
+
+    // Generate server.json first
+    generateServerJson();
+}
+
+async function publishServerNow() {
+    if (!authToken) {
+        alert('⚠️ Please login with GitHub first');
+        return;
+    }
+
+    if (!currentServerJson) {
+        alert('⚠️ Please generate server.json first');
+        return;
+    }
+
+    const publishStatus = document.getElementById('publishStatus');
+    const publishNowBtn = document.getElementById('publishNowBtn');
+    
+    publishStatus.style.display = 'block';
+    publishStatus.className = 'publish-status loading';
+    publishStatus.textContent = '📤 Publishing server to registry...';
+    publishNowBtn.disabled = true;
+
+    try {
+        const response = await fetch(`${REGISTRY_URL}/publish`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(currentServerJson)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        publishStatus.className = 'publish-status success';
+        publishStatus.textContent = '✅ Server published successfully! Refreshing server list...';
+        
+        // Refresh server list
+        setTimeout(() => {
+            loadServers();
+            closeSubmitModal();
+        }, 2000);
+
+    } catch (error) {
+        console.error('Publish error:', error);
+        publishStatus.className = 'publish-status error';
+        publishStatus.textContent = `❌ Publishing failed: ${error.message}`;
+    } finally {
+        publishNowBtn.disabled = false;
+    }
 }
 
 // Load servers from registry API
@@ -138,13 +457,8 @@ function createServerCard(server, meta) {
     const card = document.createElement('div');
     card.className = 'server-card';
 
-    // Determine icon based on server type
     const icon = getServerIcon(server);
-
-    // Get transport info
     const transportInfo = getTransportInfo(server);
-
-    // Format dates
     const publishedDate = meta?.publishedAt ? new Date(meta.publishedAt).toLocaleDateString() : 'N/A';
     const updatedDate = meta?.updatedAt ? new Date(meta.updatedAt).toLocaleDateString() : 'N/A';
 
@@ -184,7 +498,6 @@ function createServerCard(server, meta) {
         </button>
     `;
     
-    // Add event listener to button after DOM creation
     const button = card.querySelector('.integration-btn');
     button.addEventListener('click', () => showIntegration(server));
 
@@ -281,7 +594,7 @@ function copyCode() {
     });
 }
 
-// Generate integration code based on server type (JSON format for mcp_servers.json)
+// Generate integration code based on server type
 function generateIntegrationCode(server) {
     const serverTitle = server.title || 'MCP Server';
     let serverConfig;
@@ -290,7 +603,6 @@ function generateIntegrationCode(server) {
         const remote = server.remotes[0];
         let remoteType = remote.type || 'sse';
         
-        // Normalize transport type - map streamable-http to sse
         if (remoteType === 'streamable-http') {
             remoteType = 'sse';
         }
@@ -309,7 +621,6 @@ function generateIntegrationCode(server) {
         const identifier = pkg.identifier || 'package-name';
         const transportType = pkg.transport?.type || 'stdio';
         
-        // Determine command based on registry type
         let command = 'python';
         let args = [`path/to/${server.name.split('/').pop()}.py`];
         
@@ -338,7 +649,6 @@ function generateIntegrationCode(server) {
         };
     }
     
-    // Wrap in servers array for complete mcp_servers.json format
     const fullConfig = {
         "servers": [serverConfig]
     };
@@ -348,15 +658,23 @@ function generateIntegrationCode(server) {
 
 // Open submit modal
 function openSubmitModal() {
+    // Check if user is logged in
+    if (!authToken) {
+        alert('🔐 Please login with GitHub first to submit a new MCP server');
+        return;
+    }
+    
     const modal = document.getElementById('submitModal');
     const form = document.getElementById('serverForm');
     const output = document.getElementById('serverJsonOutput');
     
-    // Reset form and hide output
     form.reset();
     form.style.display = 'block';
     output.style.display = 'none';
     toggleServerTypeFields('');
+    currentServerJson = null;
+    
+    updateAuthUI();
     
     modal.style.display = 'flex';
 }
@@ -364,6 +682,8 @@ function openSubmitModal() {
 // Close submit modal
 function closeSubmitModal() {
     document.getElementById('submitModal').style.display = 'none';
+    const publishStatus = document.getElementById('publishStatus');
+    publishStatus.style.display = 'none';
 }
 
 // Toggle server type fields
@@ -371,11 +691,9 @@ function toggleServerTypeFields(serverType) {
     const remoteFields = document.getElementById('remoteFields');
     const packageFields = document.getElementById('packageFields');
     
-    // Hide all conditional fields
     remoteFields.style.display = 'none';
     packageFields.style.display = 'none';
     
-    // Show relevant fields based on type
     if (serverType === 'remote') {
         remoteFields.style.display = 'block';
     } else if (serverType === 'npm' || serverType === 'pypi' || serverType === 'nuget') {
@@ -385,20 +703,17 @@ function toggleServerTypeFields(serverType) {
 
 // Generate server.json
 function generateServerJson() {
-    // Get form values
     const serverName = document.getElementById('serverName').value.trim();
     const serverTitle = document.getElementById('serverTitle').value.trim();
     const serverDescription = document.getElementById('serverDescription').value.trim();
     const serverVersion = document.getElementById('serverVersion').value.trim();
     const serverType = document.getElementById('serverType').value;
     
-    // Validate required fields
     if (!serverName || !serverTitle || !serverDescription || !serverVersion || !serverType) {
         alert('Please fill in all required fields');
         return;
     }
     
-    // Build server.json object
     const serverJson = {
         "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
         "name": serverName,
@@ -407,7 +722,6 @@ function generateServerJson() {
         "version": serverVersion
     };
     
-    // Add type-specific configuration
     if (serverType === 'remote') {
         const remoteType = document.getElementById('remoteType').value;
         const remoteUrl = document.getElementById('remoteUrl').value.trim();
@@ -445,13 +759,22 @@ function generateServerJson() {
         ];
     }
     
-    // Display generated JSON
+    currentServerJson = serverJson;
+    
     const generatedJson = document.getElementById('generatedJson');
     generatedJson.textContent = JSON.stringify(serverJson, null, 2);
     
-    // Hide form and show output
+    const outputMessage = document.getElementById('outputMessage');
+    if (authToken) {
+        outputMessage.innerHTML = '✅ server.json generated! You can copy it or click "Publish Now" to publish directly to the registry.';
+    } else {
+        outputMessage.innerHTML = 'Copy this content to your <code>server.json</code> file and use the MCP publisher CLI to publish, or login with GitHub to publish directly.';
+    }
+    
     document.getElementById('serverForm').style.display = 'none';
     document.getElementById('serverJsonOutput').style.display = 'block';
+    
+    updateAuthUI();
 }
 
 // Copy server.json to clipboard
