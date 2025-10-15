@@ -1,79 +1,44 @@
-# MCP Client with Google Gemini
+# MCP Client
 
-A simple MCP client that uses Google Gemini as an LLM agent to interact with the Simple Calculator MCP Server.
+Test MCP servers using Google Gemini as the AI agent.
 
-## Setup
-
-### 1. Install Dependencies
+## 🚀 Quick Start
 
 ```bash
-cd MCP_Client
+# 1. Install dependencies
 pip install -r requirements.txt
-```
 
-### 2. Set Up Gemini API Key
+# 2. Get API key from https://makersuite.google.com/app/apikey
 
-Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+# 3. Create .env file
+echo "GEMINI_API_KEY=your-key-here" > .env
 
-Create a `.env` file in the `MCP_Client` directory:
-
-```bash
-GEMINI_API_KEY=your-api-key-here
-```
-
-## Usage
-
-Make sure the calculator server is available, then run:
-
-```bash
+# 4. Run client
 python client.py
 ```
 
-## How It Works
-
-1. Connects to the Simple Calculator MCP Server
-2. Gets available tools (add, subtract, multiply, divide)
-3. Takes user input
-4. Asks Gemini if calculation is needed
-5. If yes, calls the appropriate MCP tool
-6. Returns result in natural language
-
-## Example
+## 💬 Example
 
 ```
-Available tools: ['add', 'subtract', 'multiply', 'divide']
-
-Chat (type 'exit' to quit)
-----------------------------------------
-
 You: What is 25 + 17?
-
 Agent: The sum of 25 and 17 is 42.
-
-You: exit
 ```
 
-## Architecture
+## 🏗️ How It Works
 
 ```
-User Input
-    ↓
-Google Gemini (LLM Agent)
-    ↓
-MCP Client (client.py)
-    ↓
-MCP Server (simple-calculator)
-    ↓
-Calculation Result
-    ↓
-Gemini formats response
-    ↓
-User sees natural language answer
+User → Gemini → MCP Client → MCP Server → Result → Gemini → User
 ```
 
-## Requirements
+1. User asks question
+2. Gemini decides if tool needed
+3. Client calls MCP server tool
+4. Server returns result
+5. Gemini formats natural language response
+
+## 📋 Requirements
 
 - Python 3.8+
 - Google Gemini API key
 - MCP Python SDK
-- Simple Calculator MCP Server running
+- MCP server running (local or cloud)
