@@ -14,14 +14,7 @@ Self-hosted registry for [Model Context Protocol (MCP)](https://modelcontextprot
 **What is MCP?** An open standard enabling AI assistants to connect to external tools and data sources.
 
 ## 🏗️ Architecture
-
-```
-Create Server → Publisher CLI → Registry API → PostgreSQL
-                                      ↓
-                                 Collection UI → Browse/Manage
-                                      ↓
-                              MCP Clients → Use Servers
-```
+<img width="1140" height="647" alt="image" src="https://github.com/user-attachments/assets/60421d2a-649e-449b-a1f6-162838e163bb" />
 
 ### Components
 
