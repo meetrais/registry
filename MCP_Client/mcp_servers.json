@@ -3,8 +3,11 @@
     {
       "name": "Simple Calculator",
       "transport": "sse",
-      "url": "http://anonymous.modelcontextprotocol.io:3000/sse",
-      "enabled": true
+      "url": "https://simple-calculator-e22hv7w4ga-uc.a.run.app/sse",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer your-secret-token-here"
+      }
     }
   ]
 }
